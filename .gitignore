@@ -1,0 +1,24 @@
+node_modules/
+.typert-workspace/
+.test-dsh-home/
+.playwright-cli/
+evidence/native-host.log
+lib/
+artifacts/
+evidence/
+backups/
+.test-dsh-home*/
+*.tgz
+
+# Local desktop state, captures, credentials, and build output
+output/
+*.log
+.env
+.env.*
+*.pem
+*.pfx
+*.user
+**/obj/
+**/bin/
+tests/fixtures/dsh-desktop-fixture.exe
+tests/fixtures/fixture-state.json

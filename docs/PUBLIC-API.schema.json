@@ -1,0 +1,982 @@
+[
+  {
+    "name": "desktop_click",
+    "description": "对已授权窗口执行 click，坐标使用 desktop_get_screenshot 的最新截图像素。PiP 支持左键 count=1/2、文本、垂直滚动和后台白名单按键（enter/esc/tab/backspace/方向/space/home/end/pageup/pagedown/f5、ctrl+单字母），其他动作拒绝。完全权限且从不询问使用会话授权，其他模式请求批准。",
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operationId": {
+          "type": "string"
+        },
+        "frameId": {
+          "type": "string"
+        },
+        "epoch": {
+          "type": "integer"
+        },
+        "delivery": {
+          "type": "string",
+          "enum": [
+            "background",
+            "foreground"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "button": {
+          "type": "string",
+          "enum": [
+            "left",
+            "right",
+            "middle"
+          ]
+        },
+        "count": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "operationId",
+        "frameId",
+        "epoch",
+        "x",
+        "y"
+      ]
+    }
+  },
+  {
+    "name": "desktop_click_target",
+    "description": "按当前帧的 UIA accessible name/controlType 或 suggestedTargets.id 查找唯一目标并点击。视觉区域需要图像模型和当前帧精确 id，父区域使用 visual-N，图标使用 visual-N.icon-M，不能按名称或类型猜测；回执 visualVerification 记录前后截图哈希与变化区域。仅在提供 fallback 且 allowCoordinateFallback=true 时允许 UIA 缺失后的坐标回退；歧义直接拒绝。",
+    "parameters": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "frameId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "epoch": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "target": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "controlType": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "allowCoordinateFallback": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "fallback": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number",
+              "minimum": 0
+            },
+            "y": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "operationId",
+        "frameId",
+        "epoch",
+        "target"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_execute_action",
+    "description": "根据最新 JPEG 截图像素执行一个授权窗口动作。候选 bbox 仅对该帧有效。不稳定 UIA 候选拒绝纯坐标点击，按 nextTool 取得新帧并使用 desktop_click_target。coordinates 是输入坐标系；effectivePoint 是实际交给执行器的坐标，effectivePointSpace 标明其坐标系；sourcePoint 保留源图投影，sourceScale 属于输入帧。标题栏命中见 hitTest，若使用定向系统命令则 delivery 明示 WM_SYSCOMMAND/SC_MINIMIZE。PiP 支持左键单击/双击、文本输入、垂直滚动和白名单按键；按键发往目标焦点控件。操作 ID 去重、帧单次消费，遵循当前权限并用新观察核验。",
+    "parameters": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "frameId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "epoch": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "delivery": {
+          "default": "background",
+          "type": "string",
+          "enum": [
+            "background",
+            "foreground"
+          ]
+        },
+        "action": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "y": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "type": {
+                  "type": "string",
+                  "const": "click"
+                },
+                "button": {
+                  "default": "left",
+                  "type": "string",
+                  "enum": [
+                    "left",
+                    "right",
+                    "middle"
+                  ]
+                },
+                "count": {
+                  "default": 1,
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2
+                },
+                "target": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 80
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 512
+                    },
+                    "controlType": {
+                      "type": "string",
+                      "maxLength": 80
+                    },
+                    "allowCoordinateFallback": {
+                      "default": false,
+                      "type": "boolean"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "type"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "y": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "type": {
+                  "type": "string",
+                  "const": "move"
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "type"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "y": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "type": {
+                  "type": "string",
+                  "const": "hold"
+                },
+                "durationMs": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 2000
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "type",
+                "durationMs"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "y": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "type": {
+                  "type": "string",
+                  "const": "drag"
+                },
+                "toX": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "toY": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "durationMs": {
+                  "default": 500,
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 2000
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "type",
+                "toX",
+                "toY"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "y": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "type": {
+                  "type": "string",
+                  "const": "type"
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "type",
+                "text"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "y": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "type": {
+                  "type": "string",
+                  "const": "key"
+                },
+                "key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 24
+                },
+                "modifiers": {
+                  "default": [],
+                  "maxItems": 3,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "ctrl",
+                      "shift",
+                      "alt"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "type",
+                "key"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "y": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "type": {
+                  "type": "string",
+                  "const": "clear"
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "type"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "y": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "type": {
+                  "type": "string",
+                  "const": "scroll"
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "up",
+                    "down",
+                    "left",
+                    "right"
+                  ]
+                },
+                "amount": {
+                  "default": 3,
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "type",
+                "direction"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "operationId",
+        "frameId",
+        "epoch",
+        "action"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_export_diagnostics",
+    "description": "将当前状态、脱敏日志和最多 5 张已遮蔽的近期帧导出到本机 zip。默认不包含截图；不会上传。",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "recentFrames": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_get_diagnostics",
+    "description": "读取真实连接、启动权限和下一步指引。plugin 标识当前包版本、构建哈希和构建时间（已注入时）。desktop.activeBackend 是当前已连接后端，未连接为 null；desktop.backend 是保留的执行器模式。desktop.capabilities 报告当前连接可用的截图能力，pipProfile 描述聊天打开 PiP 后支持的能力。desktop.pipDisplay 分别报告建连请求和 WTS 实测的子会话分辨率。未连接也能调用。",
+    "parameters": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "desktop_get_screenshot",
+    "description": "获取真实窗口、主桌面或区域截图。输入坐标以最新截图像素为准。scale.width/height 是 JPEG 尺寸，rawWidth/rawHeight 是 SDK 原图（裁剪时为原图中的裁剪区域）尺寸，与窗口外框尺寸分别记录。accessibility 描述窗口的 UIA 读取情况。自绘或无名称控件应在本帧图像上确认；不可用时用 read_image 读取 filePath。附件失败时 imageMode=unavailable，同时返回 UIA 树、filePath、attachmentError 和 read_image 参数。目标最小化时按 reason/nextTool 调用 desktop_restore_window。需要应用时优先调用 desktop_open_application({appId:\"vmware-workstation\"})，其他应用传本地绝对 .exe 路径 path。它会建立 PiP、启动并核验绑定，不需要已有窗口。needs_review 时请在面板核对；不要反复对空窗口调用 desktop_start_task。画中画仅允许目标窗口截图，主桌面截图仅供观察。",
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "image",
+            "uia",
+            "changed"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "window",
+            "desktop"
+          ]
+        },
+        "crop": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "width": {
+              "type": "integer"
+            },
+            "height": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "x",
+            "y",
+            "width",
+            "height"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "desktop_get_task_status",
+    "description": "读取桌面执行器连接、任务进度、当前确认请求和验收状态。未连接时可调用 desktop_open_child_session。",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_get_windows",
+    "description": "列出可授权应用窗口。includeDiagnostics=true 时返回 {windows,windowDiscovery}。PiP 为空时可调用 desktop_launch_in_child_session 启动应用，无需先绑定窗口。",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "includeDiagnostics": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_launch_in_child_session",
+    "description": "PiP 只有系统窗口、窗口列表为空时，下一步使用本工具启动应用，不要先启动任务。只需提供本地 .exe 绝对路径 path，operationId 可选；不接受命令行参数。无需已绑定窗口。完全权限且从不询问使用会话授权，否则请求本次批准。回执返回 operationId，重试时复用它；窗口未出现时先重新发现，不要盲目重复启动。",
+    "parameters": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 1024
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_move_mouse",
+    "description": "对已授权窗口执行 move，坐标使用 desktop_get_screenshot 的最新截图像素。PiP 支持左键 count=1/2、文本、垂直滚动和后台白名单按键（enter/esc/tab/backspace/方向/space/home/end/pageup/pagedown/f5、ctrl+单字母），其他动作拒绝。完全权限且从不询问使用会话授权，其他模式请求批准。",
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operationId": {
+          "type": "string"
+        },
+        "frameId": {
+          "type": "string"
+        },
+        "epoch": {
+          "type": "integer"
+        },
+        "delivery": {
+          "type": "string",
+          "enum": [
+            "background",
+            "foreground"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "operationId",
+        "frameId",
+        "epoch",
+        "x",
+        "y"
+      ]
+    }
+  },
+  {
+    "name": "desktop_open_application",
+    "description": "优先使用：一次请求建立 PiP、在子会话启动应用、核验并绑定主窗口。VMware 使用 appId=vmware-workstation，其他应用使用绝对 exe 路径 path（两者选一）。完全权限且从不询问遵循会话授权。ready 才表示主窗口验证通过；needs_review 要在面板核对。失败或超时不要换 ID 反复启动。",
+    "parameters": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "appId": {
+          "type": "string",
+          "enum": [
+            "vmware-workstation"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 1024
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_open_child_session",
+    "description": "按当前 Harness 会话权限打开 Windows 画中画并返回窗口列表。完全权限且从不询问时直接启动，需询问时请求本次批准。窗口绑定和输入另行授权。",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_pause_task",
+    "description": "暂停并排空当前桌面执行会话。任务暂停后由面板所有者继续。",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_press_key",
+    "description": "对已授权窗口执行 key，坐标使用 desktop_get_screenshot 的最新截图像素。PiP 支持左键 count=1/2、文本、垂直滚动和后台白名单按键（enter/esc/tab/backspace/方向/space/home/end/pageup/pagedown/f5、ctrl+单字母），其他动作拒绝。完全权限且从不询问使用会话授权，其他模式请求批准。",
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operationId": {
+          "type": "string"
+        },
+        "frameId": {
+          "type": "string"
+        },
+        "epoch": {
+          "type": "integer"
+        },
+        "delivery": {
+          "type": "string",
+          "enum": [
+            "background",
+            "foreground"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "key": {
+          "type": "string"
+        },
+        "modifiers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "ctrl",
+              "shift",
+              "alt"
+            ]
+          }
+        }
+      },
+      "required": [
+        "operationId",
+        "frameId",
+        "epoch",
+        "x",
+        "y",
+        "key"
+      ]
+    }
+  },
+  {
+    "name": "desktop_reset_child_session",
+    "description": "幂等重置本插件拥有的 PiP/孤儿子会话。只接受可选 operationId；未连接成功返回 state=idle，完成自有清理返回 state=released 与 releasedPids。相同 operationId 返回原回执，不会关闭后来建立的连接。撤销旧帧和授权；不终止其它进程或会话，不授予新权限。",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "operationId": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_restore_window",
+    "description": "恢复已授权目标窗口，不需要截图或 frameId。传入 desktop_get_task_status 的 connectionId、epoch、windowId 和 pid；独立核验当前权限与目标身份。确认稳定几何后返回 state=restored、verified=true；超过等待时限返回 state=restoring 和 retryAfterMs，不附带窗口几何。按 nextTool 调用 desktop_get_screenshot 取得新帧。",
+    "parameters": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "connectionId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "windowId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "pid": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "connectionId",
+        "epoch",
+        "windowId",
+        "pid"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_resume_task",
+    "description": "继续（必须重新截图）当前桌面执行会话。任务暂停后由面板所有者继续。",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_scroll",
+    "description": "对已授权窗口执行 scroll，坐标使用 desktop_get_screenshot 的最新截图像素。PiP 支持左键 count=1/2、文本、垂直滚动和后台白名单按键（enter/esc/tab/backspace/方向/space/home/end/pageup/pagedown/f5、ctrl+单字母），其他动作拒绝。完全权限且从不询问使用会话授权，其他模式请求批准。",
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operationId": {
+          "type": "string"
+        },
+        "frameId": {
+          "type": "string"
+        },
+        "epoch": {
+          "type": "integer"
+        },
+        "delivery": {
+          "type": "string",
+          "enum": [
+            "background",
+            "foreground"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "up",
+            "down",
+            "left",
+            "right"
+          ]
+        },
+        "amount": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "operationId",
+        "frameId",
+        "epoch",
+        "x",
+        "y",
+        "direction"
+      ]
+    }
+  },
+  {
+    "name": "desktop_select_window",
+    "description": "将发现列表中的 windowId 绑定为 PiP 目标。完全权限且从不询问使用当前会话授权，否则请求批准；绑定后获取新截图。",
+    "parameters": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "windowId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        }
+      },
+      "required": [
+        "windowId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_start_task",
+    "description": "EXPERIMENTAL，默认关闭（experimentalTasks=true 才可用）。在用户已授权的单个窗口中创建任务，用图像模型逐步规划，由用户批准每步输入和验收。",
+    "parameters": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "goal": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1500
+        },
+        "acceptance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "maxSteps": {
+          "default": 10,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 24
+        },
+        "timeoutSeconds": {
+          "default": 180,
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 600
+        },
+        "delivery": {
+          "default": "background",
+          "type": "string",
+          "enum": [
+            "background",
+            "foreground"
+          ]
+        }
+      },
+      "required": [
+        "goal",
+        "acceptance"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_stop_task",
+    "description": "终止并撤销当前桌面执行会话。任务暂停后由面板所有者继续。",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_type_text",
+    "description": "对已授权窗口执行 type，坐标使用 desktop_get_screenshot 的最新截图像素。PiP 支持左键 count=1/2、文本、垂直滚动和后台白名单按键（enter/esc/tab/backspace/方向/space/home/end/pageup/pagedown/f5、ctrl+单字母），其他动作拒绝。完全权限且从不询问使用会话授权，其他模式请求批准。",
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operationId": {
+          "type": "string"
+        },
+        "frameId": {
+          "type": "string"
+        },
+        "epoch": {
+          "type": "integer"
+        },
+        "delivery": {
+          "type": "string",
+          "enum": [
+            "background",
+            "foreground"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "operationId",
+        "frameId",
+        "epoch",
+        "x",
+        "y",
+        "text"
+      ]
+    }
+  },
+  {
+    "name": "desktop_vm_command",
+    "description": "在已绑定 VMware Workstation 的 PiP 子会话中运行固定 vmrun 命令。appId=vmware-workstation，operationId 必须是 UUID。list 只读且不传 vm，确认后返回 state=listed 和 runningCount，空列表的数量为 0。start/stop/suspend/reset 要求本会话的完全权限，以及允许根目录内的可信 VM 名称或 VMX 路径。目标窗口可最小化。按证据确认状态，未知时用新请求 list 检查，勿重复电源命令。仅显式 fallback=ui 且命令确定未执行时返回新截图入口，UI 输入沿用独立授权。",
+    "parameters": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "appId": {
+          "type": "string",
+          "const": "vmware-workstation"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "vm": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "command": {
+          "type": "string",
+          "enum": [
+            "list",
+            "start",
+            "stop",
+            "suspend",
+            "reset"
+          ]
+        },
+        "fallback": {
+          "type": "string",
+          "const": "ui"
+        }
+      },
+      "required": [
+        "appId",
+        "operationId",
+        "command"
+      ],
+      "additionalProperties": false
+    }
+  }
+]

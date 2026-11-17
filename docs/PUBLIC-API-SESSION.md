@@ -1,0 +1,11 @@
+# Child-session recovery contract — RC.1
+
+`desktop_reset_child_session({})` is owner-only, idempotent and coalesces concurrent resets. It revokes connection identity and old frames before cleanup, joins pending teardown, and returns a stopped runtime state only after cleanup succeeds. It neither grants observation/input nor starts an application. A live attended-desktop connection is refused; use its ordinary stop command instead. `desktop_open_application` may then request a new connection through the existing authorization flow.
+
+Cleanup is restricted to `ChildSessionClient` instances allocated by this plugin host. The native recovery helper verifies its per-run capability token, canonical run directory and executable, parent session, original broker PID/birth, child WTS session ID and logon timestamp. It does not enumerate/kill matching process names. A recycled PID/session or foreign association is refused. Missing ownership evidence never authorizes session logoff. A legacy orphan from a previous host without the retained capability is deliberately not recoverable by this API.
+
+Child errors carry `reason`, `nextTool`, and optionally `association:active|orphan|unknown` and `retryAfterMs`. `active` directs inspection of an existing connection; a proven `orphan` directs reset. `unknown` means ownership cannot be established, not permission to force-release a session. Tool projection prevents `nextTool` from naming the tool that just failed. Repeated unknown input results are never automatically dispatched again.
+
+The executor heartbeat runs only while connected. A missed bounded status heartbeat rejects pending requests, revokes the connection, tears down the owned child and updates the existing runtime panel through failed status/lastResult. Stop finalizes task state even when both transport stop and cleanup report failures; retained owned cleanup records allow a later reset retry. Successful reset clears local frame storage; caller cancellation cannot make stale authorization valid again.
+
+See [the recovery report](TEST_REPORT_SESSION_RECOVERY_RC1.md) for unit, native negative and real Windows orphan/20-cycle evidence. Reset cannot guarantee application readiness; the independent application adapter and privacy checks must also pass.

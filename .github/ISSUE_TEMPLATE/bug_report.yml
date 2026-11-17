@@ -1,0 +1,28 @@
+name: Bug report
+description: Report a reproducible failure without screen contents or credentials.
+body:
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Plugin, Harness, Windows build, Node and .NET versions; app name/version.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps, expected result, actual result
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Redacted evidence
+      description: Include reason and nextTool, timestamps and diagnostic state. Review any attachments locally. Never include passwords, tokens, private paths or unmasked screenshots.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Review
+      options:
+        - label: I reviewed the report and removed private data.
+          required: true

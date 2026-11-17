@@ -1,0 +1,39 @@
+name: Windows validation
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - run: node scripts/export-public-api.mjs --check
+      - run: npm test
+      - run: npm run verify:package
+      - run: npm pack --ignore-scripts --json --pack-destination artifacts
+      - shell: pwsh
+        run: |
+          $package = Get-ChildItem -LiteralPath artifacts -Filter 'dsh-plugin-virtual-desktop-*.tgz' | Select-Object -First 1
+          node scripts/verify-package.mjs $package.FullName
+          if ($LASTEXITCODE -ne 0) { throw 'Package verification failed' }
+          npm run verify:install -- $package.FullName
+          if ($LASTEXITCODE -ne 0) { throw 'Isolated install verification failed' }
+      - run: npm run eval
+      - run: npm run bench
+      - uses: actions/upload-artifact@v4
+        with:
+          name: validation-artifacts
+          path: artifacts/
+          retention-days: 30

@@ -1,0 +1,5 @@
+- insert:
+    - id: virtual-desktop-registry
+      name: '@deepseek-ai/dsh-computer-use'
+    - id: virtual-desktop
+      name: dsh-plugin-virtual-desktop

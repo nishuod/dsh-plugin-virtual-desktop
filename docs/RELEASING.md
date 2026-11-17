@@ -1,0 +1,15 @@
+# Releasing
+
+The [GitHub prerelease](https://github.com/nishuod/dsh-plugin-virtual-desktop/releases/tag/v1.0.0-rc.2) distributes the Windows tarball and its SHA256 checksum. The first registry installation and clean-machine acceptance remain release gates. Use the tarball procedure in [Installation](INSTALL.md) for this candidate.
+
+1. In a GitHub repository, configure npm package ownership, the protected `npm-publication` environment and its `NPM_TOKEN` secret. Enable private vulnerability reporting and set a private maintainer contact. Do not commit credentials.
+2. Update package and lockfile versions together, `CHANGELOG.md`, `docs/PUBLIC-API.md`, acceptance reports and support matrices. RC tags use `v1.0.0-rc.N`; stable uses `v1.0.0` only after all gates pass.
+3. Run `npm run release:prepare` on Windows x64. It builds, tests, checks that the tarball filename and embedded manifest agree, and writes SHA256SUMS. It retains the previous registry package under `rollback/`. When npm has no history, preparation checks the prior local RC against its recorded SHA256 and retains it if present. The local preview.14 baseline is the fallback if there is no prior RC. That older baseline may contain source maps.
+4. Tag the reviewed source and publish its verified tarball and checksum on GitHub. npm publication is a separate maintainer action. Once the protected environment and token are configured, manually dispatch the npm publication workflow for the corresponding version tag.
+5. On a clean supported Windows machine, follow README and record package version, dependencies, diagnostics, child-session readiness, password masking and reset/open behavior. Promote stable only after P0/P1/P2 release gates are backed by real evidence.
+
+To roll back, locate the previous trusted package, verify its SHA256, exit Harness and use `dsh plugin --profile desktop add <verified-rollback.tgz> --ignore-scripts`. Reopen Harness and authorize the window again. The semver profile becomes usable after registry publication and smoke testing.
+
+The package allowlist is `lib`, `types`, `docs` plus npm's root metadata/readme/license. `.d.ts` files are intentional public declarations; executable TypeScript source, C# source, evidence, debug symbols and source maps are prohibited. The bundle patch and optional compatibility script live under `lib`. `scripts/verify-package.mjs` validates the actual gzip/tar payload and resolves every exported entry point.
+
+Preparation and Windows CI also run `npm run verify:install -- <candidate.tgz>`. It creates a fresh OS temporary dependency tree, installs the actual tarball and host test dependencies from npm with lifecycle scripts disabled, verifies native dependency loading, registers 23 public tools and executes `desktop_get_diagnostics`. The diagnostic channel must be ready while desktop input stays disabled. It does not launch an application or modify an existing Harness profile. Results are retained in `artifacts/install-smoke/`; the temporary install is retained for inspection and may be removed manually. This same-machine check does not replace clean-machine or registry-package acceptance.

@@ -1,0 +1,12 @@
+{
+  "name": "dsh-profile-desktop",
+  "private": true,
+  "dsh": {
+    "profile": {
+      "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app", "dsh-plugin-virtual-desktop"]
+    }
+  },
+  "dependencies": {
+    "dsh-plugin-virtual-desktop": "^1.0.0-rc.2"
+  }
+}

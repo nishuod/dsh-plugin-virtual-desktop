@@ -1,0 +1,6 @@
+{
+  "source": "User-provided rc.2 Windows chat capture in VMware Workstation Pro 17. The image and UIA-only calls were less than one second apart.",
+  "target": {"id":"uia-35","name":"最小化","controlType":"Button"},
+  "image": {"x":1112,"y":18,"width":52,"height":6},
+  "uiaOnly": {"x":1149,"y":18,"width":38,"height":6}
+}

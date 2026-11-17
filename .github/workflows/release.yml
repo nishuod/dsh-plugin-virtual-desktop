@@ -1,0 +1,53 @@
+name: Publish to npm
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prepare:
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v1.')
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: npm ci --ignore-scripts
+      - run: npm run release:prepare
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-release
+          path: artifacts/releases/
+          if-no-files-found: error
+          retention-days: 90
+  publish:
+    needs: prepare
+    runs-on: windows-latest
+    environment: npm-publication
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-release
+          path: release
+      - shell: pwsh
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          $version = $env:GITHUB_REF_NAME.Substring(1)
+          $directory = Join-Path 'release' $version
+          $package = Join-Path $directory "dsh-plugin-virtual-desktop-$version.tgz"
+          $expected = (@(Get-Content -LiteralPath (Join-Path $directory 'SHA256SUMS'))[0] -split '\s+')[0]
+          $actual = (Get-FileHash -LiteralPath $package -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($expected -ne $actual) { throw 'Package checksum mismatch' }
+          $tag = if ($version -match '-rc\.\d+$') { 'rc' } else { 'latest' }
+          npm publish $package --access public --tag $tag --ignore-scripts
+          if ($LASTEXITCODE -ne 0) { throw 'npm publish failed' }

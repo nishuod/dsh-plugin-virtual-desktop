@@ -1,0 +1,364 @@
+[
+  {
+    "id": "basic-01-click",
+    "tier": "basic",
+    "app": "owned-fixture",
+    "initial": "Counter is zero",
+    "steps": [
+      "open and verify owned target",
+      "capture UIA and screenshot before",
+      "Click the named 增加计数 button",
+      "capture UIA and screenshot after",
+      "Counter is one"
+    ],
+    "expected": {
+      "outcome": "delivered",
+      "uiaChanged": true,
+      "screenshotHashChanged": true,
+      "assertion": "Counter is one"
+    }
+  },
+  {
+    "id": "basic-02-type",
+    "tier": "basic",
+    "app": "owned-fixture",
+    "initial": "Text field is empty",
+    "steps": [
+      "open and verify owned target",
+      "capture UIA and screenshot before",
+      "Type fixture-safe text into the named 测试文本输入框 field",
+      "capture UIA and screenshot after",
+      "UIA Value equals the supplied text"
+    ],
+    "expected": {
+      "outcome": "delivered",
+      "uiaChanged": true,
+      "screenshotHashChanged": true,
+      "assertion": "UIA Value equals the supplied text"
+    }
+  },
+  {
+    "id": "basic-03-clear",
+    "tier": "basic",
+    "app": "owned-fixture",
+    "initial": "Text field contains fixture-safe text",
+    "steps": [
+      "open and verify owned target",
+      "capture UIA and screenshot before",
+      "Send ctrl+a then backspace using separate fresh frames into the text field",
+      "capture UIA and screenshot after",
+      "UIA Value is empty"
+    ],
+    "expected": {
+      "outcome": "delivered",
+      "uiaChanged": true,
+      "screenshotHashChanged": true,
+      "assertion": "UIA Value is empty"
+    }
+  },
+  {
+    "id": "basic-04-key",
+    "tier": "basic",
+    "app": "owned-fixture",
+    "initial": "Text field has focus",
+    "steps": [
+      "open and verify owned target",
+      "capture UIA and screenshot before",
+      "Send Escape into the focused text field",
+      "capture UIA and screenshot after",
+      "Fixture escapes counter increases once, visible UIA counter changes, and text is unchanged"
+    ],
+    "expected": {
+      "outcome": "delivered",
+      "uiaChanged": true,
+      "screenshotHashChanged": true,
+      "assertion": "Fixture escapes counter increases once, visible UIA counter changes, and text is unchanged"
+    }
+  },
+  {
+    "id": "basic-05-enter",
+    "tier": "basic",
+    "app": "owned-fixture",
+    "initial": "Text field focused and enters counter zero",
+    "steps": [
+      "open and verify owned target",
+      "capture UIA and screenshot before",
+      "Send Enter to the focused field",
+      "capture UIA and screenshot after",
+      "Enters counter becomes one and UIA field contains newline"
+    ],
+    "expected": {
+      "outcome": "delivered",
+      "uiaChanged": true,
+      "screenshotHashChanged": true,
+      "assertion": "Enters counter becomes one and UIA field contains newline"
+    }
+  },
+  {
+    "id": "basic-06-replace",
+    "tier": "basic",
+    "app": "owned-fixture",
+    "initial": "Text field contains old fixture text",
+    "steps": [
+      "open and verify owned target",
+      "capture UIA and screenshot before",
+      "Send ctrl+a then type replacement through separate fresh frames",
+      "capture UIA and screenshot after",
+      "UIA field value equals replacement text"
+    ],
+    "expected": {
+      "outcome": "delivered",
+      "uiaChanged": true,
+      "screenshotHashChanged": true,
+      "assertion": "UIA field value equals replacement text"
+    }
+  },
+  {
+    "id": "basic-07-scroll",
+    "tier": "basic",
+    "app": "owned-fixture",
+    "initial": "Scrollable content at top",
+    "steps": [
+      "open and verify owned target",
+      "capture UIA and screenshot before",
+      "Scroll down inside verified list bounds",
+      "capture UIA and screenshot after",
+      "Visible UIA items and scroll position change"
+    ],
+    "expected": {
+      "outcome": "delivered",
+      "uiaChanged": true,
+      "screenshotHashChanged": true,
+      "assertion": "Visible UIA items and scroll position change"
+    }
+  },
+  {
+    "id": "basic-08-double-click",
+    "tier": "basic",
+    "app": "owned-fixture",
+    "initial": "Double-click counter zero",
+    "steps": [
+      "open and verify owned target",
+      "capture UIA and screenshot before",
+      "Double click the fixture colored panel inside its reviewed screenshot bounds",
+      "capture UIA and screenshot after",
+      "Double-click counter increments once"
+    ],
+    "expected": {
+      "outcome": "delivered",
+      "uiaChanged": true,
+      "screenshotHashChanged": true,
+      "assertion": "Double-click counter increments once"
+    }
+  },
+  {
+    "id": "app-09-visual-card",
+    "tier": "application",
+    "app": "vmware",
+    "initial": "Owned VMware home has an audited Open a Virtual Machine card and no open dialog",
+    "steps": [
+      "Open and bind the owned VMware window",
+      "Capture the image and verify the audited card contents",
+      "Click the exact frame-local visual ID",
+      "Observe a new same-PID Open file dialog and changed UIA/image evidence"
+    ],
+    "expected": {
+      "outcome": "delivered",
+      "uiaChanged": true,
+      "screenshotHashChanged": true,
+      "assertion": "The audited card opens one owned same-PID file dialog"
+    }
+  },
+  {
+    "id": "app-10-attachment-fallback",
+    "tier": "application",
+    "app": "owned-fixture",
+    "initial": "Owned fixture is bound; the evaluation attachment store rejects the live screenshot",
+    "steps": [
+      "Open the fixture and register the real screenshot tool",
+      "Inject the attachment store rejection only",
+      "Call desktop_get_screenshot",
+      "Decode the operational filePath and compare its bytes to the rejected attachment"
+    ],
+    "expected": {
+      "outcome": "fallback-readable",
+      "verification": "observation",
+      "uiaChanged": false,
+      "screenshotHashChanged": false,
+      "assertion": "Screenshot receipt returns the exact readable local JPEG and matching read_image arguments"
+    }
+  },
+  {
+    "id": "app-11-vmware-list",
+    "tier": "application",
+    "app": "vmware",
+    "initial": "VMware Workstation is verified in a fresh child session with no VM started by this test",
+    "steps": [
+      "Open the owned VMware window and capture its UI",
+      "Call desktop_vm_command with list only",
+      "Compare the receipt runningCount to the child-session process cross-check and capture afterward"
+    ],
+    "expected": {
+      "outcome": "confirmed",
+      "verification": "observation",
+      "uiaChanged": false,
+      "screenshotHashChanged": false,
+      "assertion": "Read-only VMware list matches the verified child-session process inventory"
+    }
+  },
+  {
+    "id": "app-12-vmware-restore",
+    "tier": "application",
+    "app": "vmware",
+    "initial": "A verified owned VMware window is ready with a fresh frame",
+    "steps": [
+      "Capture the bound VMware window",
+      "Click named Minimize and verify native dispatch and minimized capture refusal",
+      "Call desktop_restore_window with the current authorized tuple",
+      "Verify restored physical geometry and capture a fresh frame"
+    ],
+    "expected": {
+      "outcome": "restored",
+      "verification": "observation",
+      "uiaChanged": false,
+      "screenshotHashChanged": false,
+      "assertion": "The same PID and window are restored and supply a fresh screenshot"
+    }
+  },
+  {
+    "id": "app-13-generic-ready",
+    "tier": "application",
+    "app": "owned-fixture",
+    "initial": "Fixture closed",
+    "steps": [
+      "open and verify owned target",
+      "capture UIA and screenshot before",
+      "Open application then click named Increment",
+      "capture UIA and screenshot after",
+      "Application ready and counter one"
+    ],
+    "expected": {
+      "outcome": "delivered",
+      "uiaChanged": true,
+      "screenshotHashChanged": true,
+      "assertion": "Application ready and counter one"
+    }
+  },
+  {
+    "id": "app-14-image-fallback",
+    "tier": "application",
+    "app": "owned-fixture",
+    "initial": "Fixture click counter zero; requested UIA name intentionally does not exist",
+    "steps": [
+      "open and verify owned target",
+      "capture UIA and screenshot before",
+      "Supply reviewed coordinates for 增加计数 and explicit allowCoordinateFallback=true",
+      "capture UIA and screenshot after",
+      "Click counter becomes one and receipt records missing UIA target plus coordinate fallback"
+    ],
+    "expected": {
+      "outcome": "delivered",
+      "uiaChanged": true,
+      "screenshotHashChanged": true,
+      "assertion": "Click counter becomes one and receipt records missing UIA target plus coordinate fallback"
+    }
+  },
+  {
+    "id": "failure-15-minimized",
+    "tier": "failure",
+    "app": "owned-fixture",
+    "initial": "Minimize owned target after capture",
+    "steps": [
+      "open and verify owned target",
+      "Minimize owned target after capture",
+      "Attempt click with prior frame",
+      "assert no input delivered and inspect reason"
+    ],
+    "expected": {
+      "reason": "minimized",
+      "inputDelivered": false
+    }
+  },
+  {
+    "id": "failure-16-resized",
+    "tier": "failure",
+    "app": "owned-fixture",
+    "initial": "Resize owned target after capture",
+    "steps": [
+      "open and verify owned target",
+      "Resize owned target after capture",
+      "Attempt click with prior frame",
+      "assert no input delivered and inspect reason",
+      "Capture again and assert the geometry rebind notice"
+    ],
+    "expected": {
+      "reason": "request-failed",
+      "inputDelivered": false
+    }
+  },
+  {
+    "id": "failure-17-orphan",
+    "tier": "failure",
+    "app": "owned-fixture",
+    "initial": "Terminate only the owned ChildSessionHost preserving association",
+    "steps": [
+      "open and verify owned target",
+      "Terminate only the owned ChildSessionHost preserving association",
+      "Attempt opening existing child session",
+      "assert no input delivered and inspect reason",
+      "Call reset_child_session and verify its released PID and cleared WTS association"
+    ],
+    "expected": {
+      "reason": "child-session-unavailable",
+      "inputDelivered": false
+    }
+  },
+  {
+    "id": "failure-18-revoked",
+    "tier": "failure",
+    "app": "owned-fixture",
+    "initial": "Revoke authorization after capture",
+    "steps": [
+      "open and verify owned target",
+      "Revoke authorization after capture",
+      "Attempt click with prior frame",
+      "assert no input delivered and inspect reason"
+    ],
+    "expected": {
+      "reason": "request-failed",
+      "inputDelivered": false
+    }
+  },
+  {
+    "id": "failure-19-reused-frame",
+    "tier": "failure",
+    "app": "owned-fixture",
+    "initial": "Complete one input using captured frame",
+    "steps": [
+      "open and verify owned target",
+      "Complete one input using captured frame",
+      "Attempt a different operationId with same frame",
+      "assert no input delivered and inspect reason"
+    ],
+    "expected": {
+      "reason": "request-failed",
+      "inputDelivered": false
+    }
+  },
+  {
+    "id": "failure-20-privacy",
+    "tier": "failure",
+    "app": "owned-fixture",
+    "initial": "The fixture is bound before adding a synthetic password control",
+    "steps": [
+      "Add a synthetic local password control to the exact owned process",
+      "Capture and verify an all-black privacy-blocked frame with no UIA text",
+      "Attempt click with that new blocked frame",
+      "Assert explicit refusal and unchanged fixture counter"
+    ],
+    "expected": {
+      "reason": "request-failed",
+      "inputDelivered": false
+    }
+  }
+]
