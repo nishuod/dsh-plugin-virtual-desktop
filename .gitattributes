@@ -1,0 +1,2 @@
+# Generated schemas are byte-compared by scripts/export-public-api.mjs.
+docs/PUBLIC-API*.schema.json text eol=lf
